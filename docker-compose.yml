@@ -1,0 +1,49 @@
+services:
+  iopaint:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cpu
+    command: ["sh", "-c", "iopaint start --model=$${IOPAINT_MODEL} --device=$${IOPAINT_DEVICE} --host=0.0.0.0 --port=8080 --model-dir=/models/iopaint"]
+    environment:
+      IOPAINT_DEVICE: cpu
+      IOPAINT_MODEL: ${IOPAINT_MODEL:-lama}
+    restart: unless-stopped
+    ports:
+      - "${IOPAINT_PORT:-28680}:8080"
+    volumes:
+      - ./models:/models
+      - ./data:/data
+      - ./outputs:/data/output
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v1/server-config', timeout=5)"]
+      interval: 10s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
+
+  mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cpu
+    command: ["python", "-m", "iopaint_mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      IOPAINT_URL: http://iopaint:8080
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 8000
+      MCP_OUTPUT_DIR: /data/output
+      MCP_ALLOWED_ROOTS: /data:/host-temp
+      MCP_PATH_MAPPINGS: ${MCP_PATH_MAPPINGS:-${MCP_HOST_TEMP_DIR:-${TEMP:-./data/input}}=>/host-temp}
+      MCP_HOST_OUTPUT_DIR: ${MCP_HOST_OUTPUT_DIR:-}
+    restart: unless-stopped
+    ports:
+      - "${MCP_PORT:-28681}:8000"
+    volumes:
+      - ./data:/data
+      - ./outputs:/data/output
+      - type: bind
+        source: ${MCP_HOST_TEMP_DIR:-${TEMP:-./data/input}}
+        target: /host-temp
+        read_only: true
+    depends_on:
+      iopaint:
+        condition: service_healthy

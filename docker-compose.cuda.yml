@@ -1,0 +1,19 @@
+services:
+  iopaint:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cuda
+    environment:
+      IOPAINT_DEVICE: cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cuda
