@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iopaint-mcp"
+version = "0.1.0"
+description = "MCP server for IOPaint REST API"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "mcp[cli]>=1.9,<2",
+  "httpx>=0.27,<1",
+  "Pillow>=9.5,<12",
+]
+
+[project.scripts]
+iopaint-mcp = "iopaint_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
